@@ -1,0 +1,12 @@
+#display2d {
+    height: 1000px;
+}
+
+#display3d {
+    border: 1px solid black;
+    height: 1000px;
+}
+
+body, html {
+    margin: 0;
+}
