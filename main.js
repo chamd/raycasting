@@ -41,6 +41,7 @@ let map = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ];
+
 let playerPos = [0, 0];
 let playerRot = 0;
 let nowKey = {};
@@ -48,6 +49,7 @@ let FOV = 60;
 let HES = 0.1;
 let mode = 0;
 let editPos = [0, 0];
+let editBlock = 1;
 let speed = 1;
 // let view = false;
 
@@ -58,9 +60,15 @@ function setMap() {
             ctx.rect(i * 50, j * 50, 50, 50);
             if (map[j][i] == 0) {
                 ctx.fillStyle = 'rgb(0, 0, 0)';
-            } else {
+            } else if (map[j][i] == 1) {
                 ctx.fillStyle = 'rgb(255, 255, 255)';
-            }
+            } else if (map[j][i] == 2) {
+                ctx.fillStyle = 'rgb(255, 0, 0)';
+            } else if (map[j][i] == 3) {
+                ctx.fillStyle = 'rgb(0, 255, 0)';
+            } else if (map[j][i] == 4) {
+                ctx.fillStyle = 'rgb(0, 0, 255)';
+            } 
             ctx.fill();
             ctx.strokeStyle = 'rgb(100, 100, 100)';
             ctx.stroke();
@@ -69,7 +77,7 @@ function setMap() {
     }
 }
 
-function setPlayer(x, y, a) {
+function setPlayer(x, y, a) { // x, y, angle
     if (mode == 0) {
         if (map[Math.floor(y / 50)][Math.floor(x / 50)] == 0) {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -99,15 +107,26 @@ function setPlayer(x, y, a) {
         setMap();
         ctx.beginPath();
         ctx.rect(x * 50, y * 50, 50, 50);
-        ctx.fillStyle = 'rgb(0, 255, 0)';
+        ctx.fillStyle = getColor(255, editBlock, 0);
         ctx.fill();
         ctx.closePath();
     }
 }
 
-function setRotation(x, y, a) {
+function setRotation(x, y, a) { // x, y, angle
     playerRot = a;
     ctx3d.clearRect(0, 0, canvas3d.width, canvas3d.height);
+    let grd = ctx3d.createLinearGradient(0, 0, 0, canvas3d.height / 2);
+    grd.addColorStop(0, "rgb(100, 100, 100)");
+    grd.addColorStop(1, "rgb(0, 0, 0)");
+    ctx3d.fillStyle = grd;
+    ctx3d.fillRect(0, 0, canvas3d.width, canvas3d.height / 2);
+
+    let grd2 = ctx3d.createLinearGradient(0, canvas3d.height / 2, 0, canvas3d.height);
+    grd2.addColorStop(0, "rgb(0, 0, 0)");
+    grd2.addColorStop(1, "rgb(100, 100, 100)");
+    ctx3d.fillStyle = grd2;
+    ctx3d.fillRect(0, canvas3d.height / 2, canvas3d.width, canvas3d.height);
     for (let i = -1 * FOV / 2; i < FOV / 2; i += HES) {
         ctx.beginPath();
         ctx.moveTo(x, y);
@@ -125,7 +144,7 @@ function setRotation(x, y, a) {
     // document.getElementById('status').innerHTML = `pos : [${x}, ${y}]<br>pos(block) : [${playerPosBlock[0]}, ${playerPosBlock[1]}]<br>rot : ${a}<br>rot(radian) : ${a * Math.PI / 180}<br>rot(radian(pi)) : ${a / 180}π`;
 }
 
-function getPosInBlock(p, m) {
+function getPosInBlock(p, m) { // position, minus
     let temp = p;
     while (temp > 50) {
         temp -= 50;
@@ -133,7 +152,7 @@ function getPosInBlock(p, m) {
     return m ? (50 - temp) : temp;
 }
 
-function getAngle(w, h, a, b, c) {
+function getAngle(w, h, a, b, c) { // width, height, a, b, c
     // Math.atan(w / h) + Math.PI       ul FF
     // - Math.atan(w / h) + Math.PI     ur TF
     // 2 * Math.PI - Math.atan(w / h)   dl FT
@@ -143,7 +162,7 @@ function getAngle(w, h, a, b, c) {
     return result;
 }
 
-function rayCasting(x, y, a, d, n) {
+function rayCasting(x, y, a, d, n) { // x, y, angle, distance, number(line id in 3D)
     if (a > 360) {
         a -= 360;
     } else if (a < 0) {
@@ -164,38 +183,24 @@ function rayCasting(x, y, a, d, n) {
     let up = [x - getPosInBlock(y, false) * tan, y - getPosInBlock(y, false)];
     let lp = [x - getPosInBlock(x, false), y - getPosInBlock(x, false) * cot];
 
+    function draw(p, c, _a, _b, _c, _d) {
+        if (map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)] == 0) {
+            rayCasting(p[0] + _b, p[1] + _a, a, d + Math.sqrt((p[0] - x)**2 + (p[1] - y)**2), n);
+        } else {
+            ctx.lineTo(p[0], p[1]);
+            ctx.strokeStyle = getColor(c, map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)], 0);
+            draw3D(d + Math.sqrt((p[0] - x)**2 + (p[1] - y)**2), n, c, map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)]);
+        }
+    }
+
     if (dl < radA || radA < dr) {
-        if (map[Math.floor(dp[1] / 50)][Math.floor(dp[0] / 50)] == 0) {
-            rayCasting(dp[0], dp[1] + 1, a, d + Math.sqrt((dp[0] - x)**2 + (dp[1] - y)**2), n);
-        } else {
-            ctx.lineTo(dp[0], dp[1]);
-            ctx.strokeStyle = 'rgb(255, 0, 0)';
-            draw3D(d + Math.sqrt((dp[0] - x)**2 + (dp[1] - y)**2), n, 255);
-        }
+        draw(dp, 255, 1, 0, 0, 0)
     } else if (dr < radA && radA < ur) {
-        if (map[Math.floor(rp[1] / 50)][Math.floor(rp[0] / 50)] == 0) {
-            rayCasting(rp[0] + 1, rp[1], a, d + Math.sqrt((rp[0] - x)**2 + (rp[1] - y)**2), n);
-        } else {
-            ctx.lineTo(rp[0], rp[1]);
-            ctx.strokeStyle = 'rgb(200, 0, 0)';
-            draw3D(d + Math.sqrt((rp[0] - x)**2 + (rp[1] - y)**2), n, 200);
-        }
+        draw(rp, 200, 0, 1, 0, 0)
     } else if (ur < radA && radA < ul) {
-        if (map[Math.floor((up[1] - 1) / 50)][Math.floor(up[0] / 50)] == 0) {
-            rayCasting(up[0], up[1], a, d + Math.sqrt((up[0] - x)**2 + (up[1] - y)**2), n);
-        } else {
-            ctx.lineTo(up[0], up[1]);
-            ctx.strokeStyle = 'rgb(255, 0, 0)';
-            draw3D(d + Math.sqrt((up[0] - x)**2 + (up[1] - y)**2), n, 255);
-        }
+        draw(up, 255, 0, 0, 1, 0)
     } else if (ul < radA && radA < dl) {
-        if (map[Math.floor(lp[1] / 50)][Math.floor((lp[0] - 1) / 50)] == 0) {
-            rayCasting(lp[0], lp[1], a, d + Math.sqrt((lp[0] - x)**2 + (lp[1] - y)**2), n);
-        } else {
-            ctx.lineTo(lp[0], lp[1]);
-            ctx.strokeStyle = 'rgb(200, 0, 0)';
-            draw3D(d + Math.sqrt((lp[0] - x)**2 + (lp[1] - y)**2), n, 200);
-        }
+        draw(lp, 200, 0, 0, 0, 1)
     }
 }
 
@@ -257,15 +262,32 @@ setInterval(() => {
             setPlayer(editPos[0] += 1, editPos[1], playerRot);
         }
         if (nowKey.e == true) {
-            map[editPos[1]][editPos[0]] = 1;
-            setMap();
+            map[editPos[1]][editPos[0]] = editBlock;
+            setPlayer(editPos[0], editPos[1], playerRot);
         }
         if (nowKey.q == true) {
             map[editPos[1]][editPos[0]] = 0;
-            setMap();
+            setPlayer(editPos[0], editPos[1], playerRot);
+        }
+        if (nowKey.w == true) {
+            editBlock ++;
+            if (editBlock > 4) {
+                editBlock = 1;
+            }
+            setPlayer(editPos[0], editPos[1], playerRot);
         }
     }
 }, 100);
+
+// let test = [5, 5]
+
+// setInterval(() => {
+//     map[test[1]][test[0]] = 0;
+//     test[0] += 1;
+//     map[test[1]][test[0]] = 1
+
+//     setPlayer(playerPos[0], playerPos[1], playerRot);
+// }, 1000);
 
 window.addEventListener('keydown', e => {
     nowKey[e.key] = true;
@@ -275,21 +297,32 @@ window.addEventListener('keyup', e => {
     nowKey[e.key] = false;
 })
 
-function draw3D(d, n, c) {
+function draw3D(d, n, c, b) { // distance, number(line id in 3D), color, block
+    let h = 40000 / d;
     ctx3d.beginPath();
     ctx3d.rect(
         canvas3d.width - n, //x
-        canvas3d.height / 2 - (30000 / d / 2), //y
+        canvas3d.height / 2 - (h / 2), //y
         canvas3d.width * HES / FOV + 1, //w
-        30000 / d//h
+        h //h
     );
-    ctx3d.fillStyle = `rgb(${c - d / 5}, 0, 0)`;
+    ctx3d.fillStyle = getColor(c, b, d);
     ctx3d.fill();
     ctx3d.closePath();
 }
 
 function setMode(m) {
     mode = m;
+}
+
+function getColor(c, b, d) {
+    let result =
+        b == 1 ? `rgb(${c - d / 5}, ${c - d / 5}, ${c - d / 5})` :
+        b == 2 ? `rgb(${c - d / 5}, 0, 0)` :
+        b == 3 ? `rgb(0, ${c - d / 5}, 0)` :
+        `rgb(0, 0, ${c - d / 5})`
+
+    return result;
 }
 
 // function setView() {
