@@ -6,6 +6,16 @@ let canvas3d = document.getElementById('display3d');
 /** @type {CanvasRenderingContext2D} */
 let ctx3d = canvas3d.getContext('2d');
 
+canvas3d.width = document.documentElement.clientWidth
+canvas3d.height = window.innerHeight
+
+window.onresize = function() {
+    canvas3d.width = document.documentElement.clientWidth
+    canvas3d.height = window.innerHeight
+
+    setPlayer(playerPos[0], playerPos[1], playerRot)
+};
+
 // let map = [
 //     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 //     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -90,6 +100,17 @@ function setPlayer(x, y, a) { // x, y, angle
     
             playerPos = [x, y];
             playerPosBlock = [Math.floor(x / 50), Math.floor(y / 50)];
+        } else if (map[Math.floor(y / 50)][Math.floor(x / 50)] == 4) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            setMap();
+            ctx.beginPath();
+            ctx.rect(x - 5, y - 5, 10, 10);
+            ctx.fillStyle = 'yellow';
+            ctx.fill();
+            ctx.closePath();
+    
+            playerPos = [x, y];
+            playerPosBlock = [Math.floor(x / 50), Math.floor(y / 50)];
         }
         setRotation(x, y, a);
         if (playerRot > 360) {
@@ -110,6 +131,7 @@ function setPlayer(x, y, a) { // x, y, angle
         ctx.fillStyle = getColor(255, editBlock, 0);
         ctx.fill();
         ctx.closePath();
+        setRotation(playerPos[0], playerPos[1], playerRot);
     }
 }
 
@@ -187,8 +209,10 @@ function rayCasting(x, y, a, d, n) { // x, y, angle, distance, number(line id in
         if (map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)] == 0) {
             rayCasting(p[0] + _b, p[1] + _a, a, d + Math.sqrt((p[0] - x)**2 + (p[1] - y)**2), n);
         } else {
-            ctx.lineTo(p[0], p[1]);
-            ctx.strokeStyle = getColor(c, map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)], 0);
+            if (mode == 0) {
+                ctx.lineTo(p[0], p[1]);
+                ctx.strokeStyle = getColor(c, map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)], 0);
+            }
             draw3D(d + Math.sqrt((p[0] - x)**2 + (p[1] - y)**2), n, c, map[Math.floor((p[1] - _c) / 50)][Math.floor((p[0] - _d) / 50)]);
         }
     }
@@ -205,7 +229,7 @@ function rayCasting(x, y, a, d, n) { // x, y, angle, distance, number(line id in
 }
 
 setMap();
-setPlayer(75, 75, 225);
+setPlayer(75, 75, 45);
 
 setInterval(() => {
     if (mode == 0) {
@@ -298,11 +322,11 @@ window.addEventListener('keyup', e => {
 })
 
 function draw3D(d, n, c, b) { // distance, number(line id in 3D), color, block
-    let h = 40000 / d;
+    let h = canvas3d.height / d * 50;
     ctx3d.beginPath();
     ctx3d.rect(
         canvas3d.width - n, //x
-        canvas3d.height / 2 - (h / 2), //y
+        canvas3d.height / 2 - (h / 2) , //y
         canvas3d.width * HES / FOV + 1, //w
         h //h
     );
@@ -311,8 +335,40 @@ function draw3D(d, n, c, b) { // distance, number(line id in 3D), color, block
     ctx3d.closePath();
 }
 
-function setMode(m) {
-    mode = m;
+function setMode() {
+    if (mode == 0) {
+        mode = 1;
+        document.getElementById('map').style.width = `700px`;
+        document.getElementById('map').style.height = `700px`;
+        document.getElementById('map').style.top = `calc(50vh - 350px)`;
+        document.getElementById('map').style.left = `calc(50vw - 350px)`;
+        document.getElementById('map').style.transform = `translateY(-20px) scale(1.03)`;
+        setTimeout(() => {
+            document.getElementById('map').style.transform = `translateY(5px) scale(1)`;
+            setTimeout(() => {
+                document.getElementById('map').style.transform = `translateY(0)`;
+            }, 400);
+        }, 300);
+        document.getElementById('display2d').style.transform = `scale(1)`;
+        document.getElementById('display2d').style.top = `100px`;
+        document.getElementById('display2d').style.left = `100px`;
+    } else if (mode == 1) {
+        mode = 0;
+        document.getElementById('map').style.width = `200px`;
+        document.getElementById('map').style.height = `100px`;
+        document.getElementById('map').style.top = `calc(100vh - 120px)`;
+        document.getElementById('map').style.left = `calc(50vw - 100px)`;
+        document.getElementById('map').style.transform = `translateY(20px) scale(0.97)`;
+        setTimeout(() => {
+            document.getElementById('map').style.transform = `translateY(-5px) scale(1)`;
+            setTimeout(() => {
+                document.getElementById('map').style.transform = `translateY(0)`;
+            }, 400);
+        }, 300);
+        document.getElementById('display2d').style.transform = `scale(0)`;
+        document.getElementById('display2d').style.top = `calc(-250px + 50px)`;
+        document.getElementById('display2d').style.left = `calc(-250px + 100px)`;
+    }
 }
 
 function getColor(c, b, d) {
@@ -327,4 +383,4 @@ function getColor(c, b, d) {
 
 // function setView() {
 //     view = true;
-// }
+// }    

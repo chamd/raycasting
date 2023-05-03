@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -7,14 +8,19 @@
     <title>Ray Casting</title>
     <link rel="stylesheet" href="main.css">
 </head>
+
 <body>
-    <canvas id="display2d" width="1000px" height="1000px"></canvas>
+    <div id="map">
+        <button class="btn" onclick="setMode()"><ion-icon name="create-sharp"></ion-icon></button>
+        <canvas id="display2d" width="1000px" height="1000px"></canvas>
+    </div>
     <!-- <div id="status"></div> -->
-    <canvas id="display3d" width="1250px" height="1000px"></canvas>
-    <button onclick="setMode(0)">play mode</button>
-    <button onclick="setMode(1)">edit mode</button>
+    <canvas id="display3d"></canvas>
     <!-- <button onclick="setView()">view</button> -->
 
     <script src="main.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
+
 </html>
